@@ -7,20 +7,18 @@ from functions import image_resize
 from functions import gesture
 import pygame
 
-
-
 ## variables
 sound_snare_path = "sound/drum_snare.mp3"
-sound_tom_path   = "sound/drum_tom1.mp3"
-sound_bass_path  = "sound/drum_bass.mp3"
+sound_tom_path = "sound/drum_tom1.mp3"
+sound_bass_path = "sound/drum_bass.mp3"
 sound_crash_path = "sound/cymbal.mp3"
-sound_ride_path  = "sound/hihat.mp3"
+sound_ride_path = "sound/hihat.mp3"
 
 image_snare_path = "images/snare.png"
-image_tom_path   = "images/tom.png"
-image_bass_path  = "images/bass.png"
+image_tom_path = "images/tom.png"
+image_bass_path = "images/bass.png"
 image_crash_path = "images/crash.png"
-image_ride_path  = "images/ride.png"
+image_ride_path = "images/ride.png"
 
 border_offset = 10
 
@@ -92,7 +90,7 @@ while True:
                 cx, cy = int(lm.x*frame_w), int(lm.y*frame_h)  ## cx, cy -> center x and y (multiply float values(lm.x) with width/height of the image(in pixel))
                 # print(index, cx, cy)
 
-                
+
                 if index == 12:  ## tip of middle finger
                     cv.circle(frame, (cx, cy), 10, (255, 0, 255), cv.FILLED)
                     #print(index, cx, cy)
@@ -109,23 +107,26 @@ while True:
             """
             flag = gesture(handLms, joint_list)
             if flag:
-                if handLms.landmark[8].y < 0.33 and handLms.landmark[8].x < 0.2:
+                if handLms.landmark[8].y*frame_h < border_offset+ride_img_h and handLms.landmark[8].x*frame_w > frame_w - ride_img_w - border_offset:
                     if position != 1:
                         ride_sound.play()
                     position = 1
-                elif handLms.landmark[8].y < 0.33 and handLms.landmark[8].x > 0.8:
+                elif handLms.landmark[8].y*frame_h < border_offset+crash_img_h and handLms.landmark[8].x*frame_w < border_offset+crash_img_w:
                     if position != 2:
                         crash_sound.play()
                     position = 2
-                elif handLms.landmark[8].y > 0.66 and handLms.landmark[8].x < 0.2:
+                elif handLms.landmark[8].y*frame_h > frame_h - snare_img_h - border_offset \
+                        and handLms.landmark[8].x*frame_w < 0 + border_offset + snare_img_w:
                     if position != 3:
                         snare_sound.play()
                     position = 3
-                elif handLms.landmark[8].y > 0.66 and 0.6 > handLms.landmark[8].x > 0.4:
+                elif handLms.landmark[8].y*frame_h > frame_h - bass_img_h - border_offset \
+                        and int((frame_w + bass_img_w) / 2) > handLms.landmark[8].x*frame_w > int((frame_w - bass_img_w) / 2):
                     if position != 4:
                         bass_sound.play()
                     position = 4
-                elif handLms.landmark[8].y > 0.66 and handLms.landmark[8].x > 0.8:
+                elif handLms.landmark[8].y*frame_h > frame_h - tom_img_h - border_offset \
+                        and handLms.landmark[8].x*frame_w > frame_w - tom_img_w - border_offset:
                     if position != 5:
                         tom_sound.play()
                     position = 5
@@ -136,16 +137,17 @@ while True:
 
     ## add fps to webcam
     currentTime = time.time()
-    fps = 1 / (currentTime-previousTime)
+    fps = 1 / (currentTime - previousTime)
     previousTime = currentTime
-    cv.putText(frame, str(int(fps)), (int(frame_w/2-frame_w/10), 80), cv.FONT_HERSHEY_TRIPLEX, 3, (0, 255, 0), 3)
+    cv.putText(frame, str(int(fps)), (int(frame_w / 2 - frame_w / 10), 80), cv.FONT_HERSHEY_TRIPLEX, 3, (0, 255, 0), 3)
 
     ## add drum parts to webcam
     frame = cvzone.overlayPNG(frame, snare_img, [0 + border_offset, frame_h - snare_img_h - border_offset])
-    frame = cvzone.overlayPNG(frame, tom_img,   [frame_w - tom_img_w - border_offset, frame_h - tom_img_h - border_offset])
-    frame = cvzone.overlayPNG(frame, bass_img,  [int((frame_w - bass_img_w)/2), frame_h - bass_img_h - border_offset])
+    frame = cvzone.overlayPNG(frame, tom_img,
+                              [frame_w - tom_img_w - border_offset, frame_h - tom_img_h - border_offset])
+    frame = cvzone.overlayPNG(frame, bass_img, [int((frame_w - bass_img_w) / 2), frame_h - bass_img_h - border_offset])
     frame = cvzone.overlayPNG(frame, crash_img, [border_offset, border_offset])
-    frame = cvzone.overlayPNG(frame, ride_img,  [frame_w - ride_img_w - border_offset, border_offset])
+    frame = cvzone.overlayPNG(frame, ride_img, [frame_w - ride_img_w - border_offset, border_offset])
 
     ## display Webcam (until 'q' is pressed)
     cv.imshow('Webcam', frame)
