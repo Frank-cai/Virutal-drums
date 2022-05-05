@@ -34,8 +34,9 @@ currentTime = 0
 capture = cv.VideoCapture(0, cv.CAP_DSHOW)
 
 ## image positions (top left = tl // bottom right = br)
-border_offset = 10
+border_offset = 30
 isTrue, frame = capture.read()
+frame = cv.resize(frame, (1080, 720))  ## resizing like this could cause stretched or compressed images
 frame_h, frame_w, frame_c = frame.shape
 
 ride_img, ride_img_tl_x, ride_img_tl_y, ride_img_br_x, ride_img_br_y = image_config(image_ride_path, frame_w, frame_h, border_offset, Top_Left)
@@ -62,6 +63,7 @@ joint_list = [[5, 6, 7], [9, 10, 11], [13, 14, 15], [17, 18, 19]]
 while True:
     ## capture Webcam frames
     isTrue, frame = capture.read()
+    frame = cv.resize(frame, (1080, 720))  ## resizing like this could cause stretched or compressed images
 
     ## process hands (currently maximum amount of hands is 2; if you want more or less hands see 'initialize a hand object' mpHands.Hands())
     frameRGB = cv.cvtColor(frame, cv.COLOR_BGR2RGB)
@@ -73,23 +75,23 @@ while True:
         for handLms in results.multi_hand_landmarks:
             flag = gesture(handLms, joint_list)
             if flag:
-                if ride_img_tl_y < handLms.landmark[12].y*frame_h < ride_img_br_y and ride_img_tl_x < handLms.landmark[12].x*frame_w < ride_img_br_x:
+                if ride_img_tl_y < handLms.landmark[8].y*frame_h < ride_img_br_y and ride_img_tl_x < handLms.landmark[8].x*frame_w < ride_img_br_x:
                     if position != Top_Left:
                         ride_sound.play()
                     position = Top_Left
-                elif crash_img_tl_y < handLms.landmark[12].y*frame_h < crash_img_br_y and crash_img_tl_x < handLms.landmark[12].x*frame_w < crash_img_br_x:
+                elif crash_img_tl_y < handLms.landmark[8].y*frame_h < crash_img_br_y and crash_img_tl_x < handLms.landmark[8].x*frame_w < crash_img_br_x:
                     if position != Top_Right:
                         crash_sound.play()
                     position = Top_Right
-                elif snare_img_tl_y < handLms.landmark[12].y*frame_h < snare_img_br_y and snare_img_tl_x < handLms.landmark[12].x*frame_w < snare_img_br_x:
+                elif snare_img_tl_y < handLms.landmark[8].y*frame_h < snare_img_br_y and snare_img_tl_x < handLms.landmark[8].x*frame_w < snare_img_br_x:
                     if position != Bottom_Left:
                         snare_sound.play()
                     position = Bottom_Left
-                elif bass_img_tl_y < handLms.landmark[12].y*frame_h < bass_img_br_y and bass_img_tl_x < handLms.landmark[12].x*frame_w < bass_img_br_x:
+                elif bass_img_tl_y < handLms.landmark[8].y*frame_h < bass_img_br_y and bass_img_tl_x < handLms.landmark[8].x*frame_w < bass_img_br_x:
                     if position != Bottom_Middle:
                         bass_sound.play()
                     position = Bottom_Middle
-                elif tom_img_tl_y < handLms.landmark[12].y*frame_h < tom_img_br_y and tom_img_tl_x < handLms.landmark[12].x*frame_w < tom_img_br_x:
+                elif tom_img_tl_y < handLms.landmark[8].y*frame_h < tom_img_br_y and tom_img_tl_x < handLms.landmark[8].x*frame_w < tom_img_br_x:
                     if position != Bottom_Right:
                         tom_sound.play()
                     position = Bottom_Right
@@ -102,7 +104,7 @@ while True:
     currentTime = time.time()
     fps = 1 / (currentTime - previousTime)
     previousTime = currentTime
-    cv.putText(frame, str(int(fps)), (int(frame_w / 2 - frame_w / 10), 80), cv.FONT_HERSHEY_TRIPLEX, 3, (0, 255, 0), 3)
+    cv.putText(frame, str(int(fps)), (int(frame_w / 2 - frame_w / 15), 80), cv.FONT_HERSHEY_TRIPLEX, 3, (0, 255, 0), 3)
 
     ## add drum parts to webcam
     frame = cvzone.overlayPNG(frame, snare_img, [snare_img_tl_x, snare_img_tl_y])
