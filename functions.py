@@ -28,8 +28,9 @@ def image_resize(image, width=None, height=None, inter=cv.INTER_AREA):
     resized = cv.resize(image, dim, interpolation=inter)
     # return the resized image
     return resized
-
-
+  
+  
+  
 # recognize hit gesture with index finger and middle finger straight
 def gesture(hand, joint_list):
 

@@ -9,16 +9,16 @@ import pygame
 
 ## variables
 sound_snare_path = "sound/drum_snare.mp3"
-sound_tom_path = "sound/drum_tom1.mp3"
-sound_bass_path = "sound/drum_bass.mp3"
+sound_tom_path   = "sound/drum_tom1.mp3"
+sound_bass_path  = "sound/drum_bass.mp3"
 sound_crash_path = "sound/cymbal.mp3"
-sound_ride_path = "sound/hihat.mp3"
+sound_ride_path  = "sound/hihat.mp3"
 
 image_snare_path = "images/snare.png"
-image_tom_path = "images/tom.png"
-image_bass_path = "images/bass.png"
+image_tom_path   = "images/tom.png"
+image_bass_path  = "images/bass.png"
 image_crash_path = "images/crash.png"
-image_ride_path = "images/ride.png"
+image_ride_path  = "images/ride.png"
 
 border_offset = 10
 
@@ -27,7 +27,7 @@ previousTime = 0
 currentTime = 0
 
 ## captures Webcam (may have to put another integer than 0 if you do not see through the wanted device)
-capture = cv.VideoCapture(0)
+capture = cv.VideoCapture(0, cv.CAP_DSHOW)
 
 ## used for images (scaling/positioning)
 isTrue, frame = capture.read()
@@ -75,10 +75,8 @@ while True:
     isTrue, frame = capture.read()
 
     ## process hands (currently maximum amount of hands is 2; if you want more or less hands see 'initialize a hand object' mpHands.Hands())
-    frame = cv.cvtColor(frame, cv.COLOR_BGR2RGB)
-    frame = cv.flip(frame, 1)
-    results = hands.process(frame)
-    frame = cv.cvtColor(frame, cv.COLOR_RGB2BGR)
+    frameRGB = cv.cvtColor(frame, cv.COLOR_BGR2RGB)
+    results = hands.process(frameRGB)
 
     ## generate landmarks on hands
     # print(results.multi_hand_landmarks)
@@ -89,7 +87,6 @@ while True:
                 # print(index, lm)
                 cx, cy = int(lm.x*frame_w), int(lm.y*frame_h)  ## cx, cy -> center x and y (multiply float values(lm.x) with width/height of the image(in pixel))
                 # print(index, cx, cy)
-
 
                 if index == 12:  ## tip of middle finger
                     cv.circle(frame, (cx, cy), 10, (255, 0, 255), cv.FILLED)
