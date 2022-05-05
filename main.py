@@ -139,12 +139,17 @@ while True:
     cv.putText(frame, str(int(fps)), (int(frame_w / 2 - frame_w / 10), 80), cv.FONT_HERSHEY_TRIPLEX, 3, (0, 255, 0), 3)
 
     ## add drum parts to webcam
-    frame = cvzone.overlayPNG(frame, snare_img, [0 + border_offset, frame_h - snare_img_h - border_offset])
-    frame = cvzone.overlayPNG(frame, tom_img,
-                              [frame_w - tom_img_w - border_offset, frame_h - tom_img_h - border_offset])
+    frame = cvzone.overlayPNG(frame, snare_img, [border_offset, frame_h - snare_img_h - border_offset])
+    frame = cvzone.overlayPNG(frame, tom_img, [frame_w - tom_img_w - border_offset, frame_h - tom_img_h - border_offset])
     frame = cvzone.overlayPNG(frame, bass_img, [int((frame_w - bass_img_w) / 2), frame_h - bass_img_h - border_offset])
     frame = cvzone.overlayPNG(frame, crash_img, [border_offset, border_offset])
     frame = cvzone.overlayPNG(frame, ride_img, [frame_w - ride_img_w - border_offset, border_offset])
+
+    cv.rectangle(frame, (0 + border_offset, frame_h - snare_img_h - border_offset), (border_offset + snare_img_w, frame_h - border_offset), (255,255,0), 1)
+    cv.rectangle(frame, (frame_w - tom_img_w - border_offset, frame_h - tom_img_h - border_offset), (frame_w - border_offset, frame_h - border_offset), (255, 255, 0), 1)
+    cv.rectangle(frame, (int((frame_w - bass_img_w) / 2), frame_h - bass_img_h - border_offset), (int((frame_w - bass_img_w) / 2) + bass_img_w, frame_h - border_offset), (255,255,0), 1)
+    cv.rectangle(frame, (border_offset, border_offset), (border_offset + crash_img_w, border_offset + crash_img_h), (255,255,0), 1)
+    cv.rectangle(frame, (frame_w - ride_img_w - border_offset, border_offset), (frame_w - border_offset, border_offset + ride_img_h), (255,255,0), 1)
 
     ## display Webcam (until 'q' is pressed)
     cv.imshow('Webcam', frame)
