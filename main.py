@@ -4,6 +4,7 @@ import time
 import cvzone
 from functions import image_config
 from functions import gesture
+from functions import image_resize
 import pygame
 
 ## pathes
@@ -31,13 +32,15 @@ previousTime = 0
 currentTime = 0
 
 ## captures Webcam (may have to put another integer than 0 if you do not see through the wanted device)
-capture = cv.VideoCapture(0, cv.CAP_DSHOW)
+#capture = cv.VideoCapture(0, cv.CAP_DSHOW)
+capture = cv.VideoCapture(0)
 
 ## image positions (top left = tl // bottom right = br)
 border_offset = 30
 isTrue, frame = capture.read()
-frame = cv.resize(frame, (1080, 720))  ## resizing like this could cause stretched or compressed images
+frame = image_resize(frame, height=720)
 frame_h, frame_w, frame_c = frame.shape
+print(frame.shape)
 
 ride_img, ride_img_tl_x, ride_img_tl_y, ride_img_br_x, ride_img_br_y = image_config(image_ride_path, frame_w, frame_h, border_offset, Top_Left)
 crash_img, crash_img_tl_x, crash_img_tl_y, crash_img_br_x, crash_img_br_y = image_config(image_crash_path, frame_w, frame_h, border_offset, Top_Right)
@@ -63,7 +66,7 @@ joint_list = [[5, 6, 7], [9, 10, 11], [13, 14, 15], [17, 18, 19]]
 while True:
     ## capture Webcam frames
     isTrue, frame = capture.read()
-    frame = cv.resize(frame, (1080, 720))  ## resizing like this could cause stretched or compressed images
+    frame = image_resize(frame, height=720)
 
     ## process hands (currently maximum amount of hands is 2; if you want more or less hands see 'initialize a hand object' mpHands.Hands())
     frameRGB = cv.cvtColor(frame, cv.COLOR_BGR2RGB)
