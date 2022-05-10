@@ -3,76 +3,170 @@ import mediapipe as mp
 import time
 import cvzone
 import numpy as np
-from functions import image_resize
+from functions import get_label
+
+from functions import image_config
 from functions import gesture
+from functions import image_resize
 import pygame
+from tkinter import *
+from PIL import Image, ImageTk
+from random import randrange
 
-## variables
-sound_snare_path = "sound/drum_snare.mp3"
-sound_tom_path   = "sound/drum_tom1.mp3"
-sound_bass_path  = "sound/drum_bass.mp3"
-sound_crash_path = "sound/cymbal.mp3"
-sound_ride_path  = "sound/hihat.mp3"
+## global variables
+run_loop = True
+run_game = False
+simon_says = ""
+user_replies = ""
+SIMON_ADD_COLOR = False
 
-image_snare_path = "images/snare.png"
-image_tom_path   = "images/tom.png"
-image_bass_path  = "images/bass.png"
+## paths
+icon_drum_path = "images/icon.ico"
+
+image_ride_path = "images/ride.png"
 image_crash_path = "images/crash.png"
-image_ride_path  = "images/ride.png"
+image_snare_path = "images/snare.png"
+image_bass_path = "images/bass.png"
+image_tom_path = "images/tom.png"
 
-border_offset = 10
+sound_ride_path = "sound/hihat.mp3"
+sound_crash_path = "sound/cymbal.mp3"
+sound_snare_path = "sound/drum_snare.mp3"
+sound_bass_path = "sound/drum_bass.mp3"
+sound_tom_path = "sound/drum_tom1.mp3"
+
+## image positions
+Top_Left = 1
+Top_Right = 2
+Bottom_Left = 3
+Bottom_Middle = 4
+Bottom_Right = 5
 
 ## used for fps
 previousTime = 0
 currentTime = 0
 
-## captures Webcam (may have to put another integer than 0 if you do not see through the wanted device)
-capture = cv.VideoCapture(0, cv.CAP_DSHOW)
+## used for tkinter gui
+gui_width_addition = 250
+gui_height_addition = 100
 
-## used for images (scaling/positioning)
+## used for simon says
+step = 0
+simon_currentTime = 0
+simon_startTime = 0
+USERS_TURN = False
+
+## captures Webcam (may have to put another integer than 0 if you do not see through the wanted device)
+# capture = cv.VideoCapture(0, cv.CAP_DSHOW)
+capture = cv.VideoCapture(0)
+
+## image positions (top left = tl // bottom right = br)
+border_offset = 30
 isTrue, frame = capture.read()
+frame = image_resize(frame, height=720)
 frame_h, frame_w, frame_c = frame.shape
-picture_height = frame_h * 0.25
+print(frame.shape)
+
+ride_img, ride_img_tl_x, ride_img_tl_y, ride_img_br_x, ride_img_br_y = image_config(image_ride_path, frame_w, frame_h, border_offset, Top_Left)
+crash_img, crash_img_tl_x, crash_img_tl_y, crash_img_br_x, crash_img_br_y = image_config(image_crash_path, frame_w, frame_h, border_offset, Top_Right)
+snare_img, snare_img_tl_x, snare_img_tl_y, snare_img_br_x, snare_img_br_y = image_config(image_snare_path, frame_w, frame_h, border_offset, Bottom_Left)
+bass_img, bass_img_tl_x, bass_img_tl_y, bass_img_br_x, bass_img_br_y = image_config(image_bass_path, frame_w, frame_h, border_offset, Bottom_Middle)
+tom_img, tom_img_tl_x, tom_img_tl_y, tom_img_br_x, tom_img_br_y = image_config(image_tom_path, frame_w, frame_h, border_offset, Bottom_Right)
 
 ## read sound files
 pygame.mixer.init()
-snare_sound = pygame.mixer.Sound(sound_snare_path)
-tom_sound = pygame.mixer.Sound(sound_tom_path)
-bass_sound = pygame.mixer.Sound(sound_bass_path)
-crash_sound = pygame.mixer.Sound(sound_crash_path)
 ride_sound = pygame.mixer.Sound(sound_ride_path)
+crash_sound = pygame.mixer.Sound(sound_crash_path)
+snare_sound = pygame.mixer.Sound(sound_snare_path)
+bass_sound = pygame.mixer.Sound(sound_bass_path)
+tom_sound = pygame.mixer.Sound(sound_tom_path)
 
 ## initialize a hand object
 mpHands = mp.solutions.hands
-hands = mpHands.Hands()
+hands = mpHands.Hands(2)  # set the maximum number of hands to 2
 mpDraw = mp.solutions.drawing_utils
-position = 0
+position = [0, 0]  # [left hand, right hand]
 joint_list = [[5, 6, 7], [9, 10, 11], [13, 14, 15], [17, 18, 19]]
 
-## snare image
-snare_img = cv.imread(image_snare_path, cv.IMREAD_UNCHANGED)
-snare_img = image_resize(snare_img, height=int(picture_height))
-snare_img_h, snare_img_w, snare_img_c = snare_img.shape
-## tom image
-tom_img = cv.imread(image_tom_path, cv.IMREAD_UNCHANGED)
-tom_img = image_resize(tom_img, height=int(picture_height))
-tom_img_h, tom_img_w, tom_img_c = tom_img.shape
-## bass image
-bass_img = cv.imread(image_bass_path, cv.IMREAD_UNCHANGED)
-bass_img = image_resize(bass_img, height=int(picture_height))
-bass_img_h, bass_img_w, bass_img_c = bass_img.shape
-## crash image
-crash_img = cv.imread(image_crash_path, cv.IMREAD_UNCHANGED)
-crash_img = image_resize(crash_img, height=int(picture_height))
-crash_img_h, crash_img_w, crash_img_c = crash_img.shape
-## ride image
-ride_img = cv.imread(image_ride_path, cv.IMREAD_UNCHANGED)
-ride_img = image_resize(ride_img, height=int(picture_height))
-ride_img_h, ride_img_w, ride_img_c = ride_img.shape
+### tkinter GUI ###
+tkinter_width = str(frame_w + gui_width_addition)
+tkinter_height = str(frame_h + gui_height_addition)
 
-while True:
+root = Tk()
+root.title("Virtual Drum")
+root.iconbitmap(icon_drum_path)
+root.geometry(tkinter_width+"x"+tkinter_height)
+
+## Titel and Webcam
+webcam_label = Label(root, text="Virtual Drum", font=("times new roman", 30, "bold"))
+webcam_label.grid(row=0, column=4)
+webcam_frame = Label(root, bg="black")
+webcam_frame.grid(row=1, column=0, rowspan=10, columnspan=10, padx=50)
+
+
+## functions for buttons
+def freePlay():
+    global run_game
+    run_game = False
+    game_text.set("Free Play")
+
+
+def startGame():
+    global run_game
+    global SIMON_ADD_COLOR
+    global user_replies
+    global simon_says
+    run_game = True
+    SIMON_ADD_COLOR = True
+    simon_says = ""
+    user_replies = ""
+    game_text.set("Remember what\nsimon says")
+
+
+def quitGUi():
+    global run_loop
+    run_loop = False
+    capture.release()
+    root.destroy()
+
+
+## buttons
+freeplay_button = Button(root, text="Free Play", command=freePlay, width=10)
+freeplay_button.grid(row=1, column=10)
+Game_button = Button(root, text="Start Game", command=startGame, width=10)
+Game_button.grid(row=3, column=10)
+exit_button = Button(root, text="Exit", command=quitGUi, width=10)
+exit_button.grid(row=10, column=10)
+
+### simon says images
+gray_img = Image.new(mode="RGB", size=(100, 100), color=(211, 211, 211))
+gray_img = ImageTk.PhotoImage(gray_img)
+green_img = Image.new(mode="RGB", size=(100, 100), color=(0, 255, 0))
+green_img = ImageTk.PhotoImage(green_img)
+blue_img = Image.new(mode="RGB", size=(100, 100), color=(0, 0, 255))
+blue_img = ImageTk.PhotoImage(blue_img)
+red_img = Image.new(mode="RGB", size=(100, 100), color=(255, 0, 0))
+red_img = ImageTk.PhotoImage(red_img)
+cyan_img = Image.new(mode="RGB", size=(100, 100), color=(0, 255, 255))
+cyan_img = ImageTk.PhotoImage(cyan_img)
+purple_img = Image.new(mode="RGB", size=(100, 100), color=(255, 0, 255))
+purple_img = ImageTk.PhotoImage(purple_img)
+
+simon_img = gray_img
+simon_frame = Label(bg="black")
+simon_frame.grid(row=4, column=10)
+
+## simon says text
+game_text = StringVar()
+game_text.set("Welcome to\nVirtual Drum")
+simon_text = Label(root, textvariable=game_text, font=("Arial", 10))
+simon_text.grid(row=5, column=10)
+
+while run_loop:
     ## capture Webcam frames
     isTrue, frame = capture.read()
+    frame = image_resize(frame, height=720)
+    frame = cv.flip(frame, 1)
 
     ## process hands (currently maximum amount of hands is 2; if you want more or less hands see 'initialize a hand object' mpHands.Hands())
     frameRGB = cv.cvtColor(frame, cv.COLOR_BGR2RGB)
@@ -81,54 +175,46 @@ while True:
     ## generate landmarks on hands
     # print(results.multi_hand_landmarks)
     if results.multi_hand_landmarks:
-        for handLms in results.multi_hand_landmarks:
-            """
-            for index, lm in enumerate(handLms.landmark):
-                # print(index, lm)
-                cx, cy = int(lm.x*frame_w), int(lm.y*frame_h)  ## cx, cy -> center x and y (multiply float values(lm.x) with width/height of the image(in pixel))
-                # print(index, cx, cy)
+        for num, handLms in enumerate(results.multi_hand_landmarks):
+            flag, LR = gesture(handLms, joint_list, num, results)
+            # show left and right-hand label
+            if get_label(num, handLms, results, frame.shape[1], frame.shape[0]):
+                text, coord = get_label(num, handLms, results, frame.shape[1], frame.shape[0])
+                cv.putText(frame, text, coord, cv.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2, cv.LINE_AA)
 
-                if index == 12:  ## tip of middle finger
-                    cv.circle(frame, (cx, cy), 10, (255, 0, 255), cv.FILLED)
-                    #print(index, cx, cy)
-                    if border_offset <= cx <= snare_img_w + border_offset and frame_h - snare_img_h - border_offset <= cy <= frame_h - border_offset:  ## right side of the screen
-                        snare_sound.play()
-                    elif frame_w - tom_img_w - border_offset <= cx <= frame_w - border_offset and frame_h - tom_img_h - border_offset <= cy <= frame_h - border_offset:
-                        tom_sound.play()
-                    elif int((frame_w - bass_img_w)/2) <= cx <= int((frame_w - bass_img_w)/2) + bass_img_w and frame_h - bass_img_h - border_offset <= cy <= frame_h - border_offset:
-                        bass_sound.play()
-                    elif border_offset <= cx <= border_offset + crash_img_w and border_offset <= cy <= border_offset + crash_img_h:
-                        crash_sound.play()
-                    elif frame_w - ride_img_w - border_offset <= cx <= frame_w - border_offset and border_offset <= cy <= ride_img_h:
-                        ride_sound.play()
-            """
-            flag = gesture(handLms, joint_list)
             if flag:
-                if handLms.landmark[8].y*frame_h < border_offset+ride_img_h and handLms.landmark[8].x*frame_w > frame_w - ride_img_w - border_offset:
-                    if position != 1:
+                if ride_img_tl_y < handLms.landmark[8].y * frame_h < ride_img_br_y and ride_img_tl_x < handLms.landmark[8].x * frame_w < ride_img_br_x:
+                    if position[LR] != Top_Left:
                         ride_sound.play()
-                    position = 1
-                elif handLms.landmark[8].y*frame_h < border_offset+crash_img_h and handLms.landmark[8].x*frame_w < border_offset+crash_img_w:
-                    if position != 2:
+                        if USERS_TURN:
+                            user_replies += str(Top_Left)
+                    position[LR] = Top_Left
+                elif crash_img_tl_y < handLms.landmark[8].y * frame_h < crash_img_br_y and crash_img_tl_x < handLms.landmark[8].x * frame_w < crash_img_br_x:
+                    if position[LR] != Top_Right:
                         crash_sound.play()
-                    position = 2
-                elif handLms.landmark[8].y*frame_h > frame_h - snare_img_h - border_offset \
-                        and handLms.landmark[8].x*frame_w < 0 + border_offset + snare_img_w:
-                    if position != 3:
+                        if USERS_TURN:
+                            user_replies += str(Top_Right)
+                    position[LR] = Top_Right
+                elif snare_img_tl_y < handLms.landmark[8].y * frame_h < snare_img_br_y and snare_img_tl_x < handLms.landmark[8].x * frame_w < snare_img_br_x:
+                    if position[LR] != Bottom_Left:
                         snare_sound.play()
-                    position = 3
-                elif handLms.landmark[8].y*frame_h > frame_h - bass_img_h - border_offset \
-                        and int((frame_w + bass_img_w) / 2) > handLms.landmark[8].x*frame_w > int((frame_w - bass_img_w) / 2):
-                    if position != 4:
+                        if USERS_TURN:
+                            user_replies += str(Bottom_Left)
+                    position[LR] = Bottom_Left
+                elif bass_img_tl_y < handLms.landmark[8].y * frame_h < bass_img_br_y and bass_img_tl_x < handLms.landmark[8].x * frame_w < bass_img_br_x:
+                    if position[LR] != Bottom_Middle:
                         bass_sound.play()
-                    position = 4
-                elif handLms.landmark[8].y*frame_h > frame_h - tom_img_h - border_offset \
-                        and handLms.landmark[8].x*frame_w > frame_w - tom_img_w - border_offset:
-                    if position != 5:
+                        if USERS_TURN:
+                            user_replies += str(Bottom_Middle)
+                    position[LR] = Bottom_Middle
+                elif tom_img_tl_y < handLms.landmark[8].y * frame_h < tom_img_br_y and tom_img_tl_x < handLms.landmark[8].x * frame_w < tom_img_br_x:
+                    if position[LR] != Bottom_Right:
                         tom_sound.play()
-                    position = 5
+                        if USERS_TURN:
+                            user_replies += str(Bottom_Right)
+                    position[LR] = Bottom_Right
                 else:
-                    position = 0
+                    position[LR] = 0
 
             mpDraw.draw_landmarks(frame, handLms, mpHands.HAND_CONNECTIONS)
 
@@ -136,21 +222,84 @@ while True:
     currentTime = time.time()
     fps = 1 / (currentTime - previousTime)
     previousTime = currentTime
-    cv.putText(frame, str(int(fps)), (int(frame_w / 2 - frame_w / 10), 80), cv.FONT_HERSHEY_TRIPLEX, 3, (0, 255, 0), 3)
+    cv.putText(frame, str(int(fps)), (int(frame_w / 2 - frame_w / 15), 80), cv.FONT_HERSHEY_TRIPLEX, 3, (0, 255, 0), 3)
 
     ## add drum parts to webcam
-    frame = cvzone.overlayPNG(frame, snare_img, [0 + border_offset, frame_h - snare_img_h - border_offset])
-    frame = cvzone.overlayPNG(frame, tom_img,
-                              [frame_w - tom_img_w - border_offset, frame_h - tom_img_h - border_offset])
-    frame = cvzone.overlayPNG(frame, bass_img, [int((frame_w - bass_img_w) / 2), frame_h - bass_img_h - border_offset])
-    frame = cvzone.overlayPNG(frame, crash_img, [border_offset, border_offset])
-    frame = cvzone.overlayPNG(frame, ride_img, [frame_w - ride_img_w - border_offset, border_offset])
+    frame = cvzone.overlayPNG(frame, ride_img, [ride_img_tl_x, ride_img_tl_y])
+    frame = cvzone.overlayPNG(frame, crash_img, [crash_img_tl_x, crash_img_tl_y])
+    frame = cvzone.overlayPNG(frame, snare_img, [snare_img_tl_x, snare_img_tl_y])
+    frame = cvzone.overlayPNG(frame, bass_img, [bass_img_tl_x, bass_img_tl_y])
+    frame = cvzone.overlayPNG(frame, tom_img, [tom_img_tl_x, tom_img_tl_y])
 
-    ## display Webcam (until 'q' is pressed)
-    cv.imshow('Webcam', frame)
-    if cv.waitKey(20) & 0xFF == ord('q'):
-        break
+    cv.rectangle(frame, (ride_img_tl_x, ride_img_tl_y), (ride_img_br_x, ride_img_br_y), (0, 255, 0), 2)
+    cv.rectangle(frame, (crash_img_tl_x, crash_img_tl_y), (crash_img_br_x, crash_img_br_y), (255, 0, 0), 2)
+    cv.rectangle(frame, (snare_img_tl_x, snare_img_tl_y), (snare_img_br_x, snare_img_br_y), (0, 0, 255), 2)
+    cv.rectangle(frame, (bass_img_tl_x, bass_img_tl_y), (bass_img_br_x, bass_img_br_y), (255, 255, 0), 2)
+    cv.rectangle(frame, (tom_img_tl_x, tom_img_tl_y), (tom_img_br_x, tom_img_br_y), (255, 0, 255), 2)
 
-## release and close everything
-capture.release()
-cv.destroyAllWindows()
+    ## simon says
+    if run_game:
+        simon_currentTime = time.time()
+
+        ## add color
+        if SIMON_ADD_COLOR:
+            simon_says += str(randrange(5) + 1)
+            SIMON_ADD_COLOR = False
+            # print(simon_says)
+            simon_startTime = simon_currentTime
+            USERS_TURN = False
+
+        ## show color(s)
+        if simon_currentTime - simon_startTime >= 1:
+            if simon_img == gray_img and len(simon_says) > step:
+                if int(simon_says[step]) == 1:
+                    simon_img = green_img
+                    ride_sound.play()
+                elif int(simon_says[step]) == 2:
+                    simon_img = blue_img
+                    crash_sound.play()
+                elif int(simon_says[step]) == 3:
+                    simon_img = red_img
+                    snare_sound.play()
+                elif int(simon_says[step]) == 4:
+                    simon_img = cyan_img
+                    bass_sound.play()
+                elif int(simon_says[step]) == 5:
+                    simon_img = purple_img
+                    tom_sound.play()
+                step = step + 1
+                simon_startTime = simon_currentTime
+            else:
+                simon_img = gray_img
+                if len(simon_says) != step:
+                    simon_startTime = simon_currentTime
+
+        ## start recognizing user input
+        if simon_currentTime - simon_startTime >= 2 and len(simon_says) == step:
+            game_text.set("Repeat")
+            USERS_TURN = True
+
+        ## determine simon says result
+        if len(user_replies) == len(simon_says):
+            if simon_says != user_replies:
+                run_game = False
+                game_text.set(f"Game over\nYour score: {len(simon_says)-1}")
+                simon_says = ""
+            else:
+                game_text.set("Correct. Remember\nwhat simon says")
+                SIMON_ADD_COLOR = True
+            user_replies = ""
+            step = 0
+    else:
+        simon_img = gray_img
+
+    ## display Webcam
+    webcam_img = cv.cvtColor(frame, cv.COLOR_BGR2RGB)
+    webcam_img = ImageTk.PhotoImage(Image.fromarray(webcam_img))
+    webcam_frame['image'] = webcam_img
+
+    ## display simon says image
+    simon_frame['image'] = simon_img
+
+    ## update gui
+    root.update()
