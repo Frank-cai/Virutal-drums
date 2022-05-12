@@ -94,4 +94,3 @@ def get_label(index, hand, results, width, height):
             output = text, coords
 
     return output
-
