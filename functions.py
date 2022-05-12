@@ -1,9 +1,9 @@
 import cv2 as cv
 import numpy as np
 
-# recognize hit gesture with index finger and middle finger straight
-def gesture(hand, joint_list):
 
+# recognize hit gesture with index finger and middle finger straight
+def gesture(hand, joint_list, index, results):
     angle = np.zeros(4)
     n = 0
     for joint in joint_list:
@@ -12,13 +12,14 @@ def gesture(hand, joint_list):
         point_B = np.array([hand.landmark[joint[2]].x, hand.landmark[joint[2]].y])
         A = point_A - point_O
         B = point_B - point_O
-        angle[n] = np.arccos(A.dot(B)/(np.linalg.norm(A)*np.linalg.norm(B)))
-        n = n+1
+        angle[n] = np.arccos(A.dot(B) / (np.linalg.norm(A) * np.linalg.norm(B)))
+        n = n + 1
 
+    lr = results.multi_handedness[index].classification[0].index
     if angle[0] > 2.5 and angle[1] > 2.5:  # and angle[2]<2.0 and angle[3]<2.0:
-        return True
+        return True, lr
     else:
-        return False
+        return False, lr
 
 
 # source: https://stackoverflow.com/a/44659589
@@ -78,3 +79,18 @@ def image_config(image_path, frame_w, frame_h, border_offset, image_desired_posi
     image_br_y = image_tl_y + image_h
 
     return image, image_tl_x, image_tl_y, image_br_x, image_br_y
+
+
+def get_label(index, hand, results, width, height):
+    output = None
+    for idx, classification in enumerate(results.multi_handedness):
+        if idx == index:
+            # Process results
+            label = classification.classification[0].label
+            text = '{}'.format(label)
+
+            # Extract Coordinates
+            coords = tuple(np.multiply(np.array((hand.landmark[0].x, hand.landmark[0].y)), [width, height]).astype(int))
+            output = text, coords
+
+    return output
