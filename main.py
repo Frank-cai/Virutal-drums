@@ -114,12 +114,14 @@ def freePlay():
 def startGame():
     global run_game
     global SIMON_ADD_COLOR
-    global user_replies
     global simon_says
+    global user_replies
+    global step
     run_game = True
     SIMON_ADD_COLOR = True
     simon_says = ""
     user_replies = ""
+    step = 0
     game_text.set("Remember what\nsimon says")
 
 
