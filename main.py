@@ -282,6 +282,12 @@ while run_loop:
             USERS_TURN = True
 
         ## determine simon says result
+        for i in range(0, len(user_replies)):
+            if user_replies[i] != simon_says[i]:
+                run_game = False
+                game_text.set(f"Game over\nYour score: {len(simon_says) - 1}")
+                simon_says = ""
+
         if len(user_replies) == len(simon_says):
             if simon_says != user_replies:
                 run_game = False
