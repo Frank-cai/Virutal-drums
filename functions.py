@@ -22,6 +22,7 @@ def gesture(hand, joint_list, index, results):
         return False, lr
 
 
+# resize image but keep width/height ratio
 # source: https://stackoverflow.com/a/44659589
 def image_resize(image, width=None, height=None, inter=cv.INTER_AREA):
     # initialize the dimensions of the image to be resized and

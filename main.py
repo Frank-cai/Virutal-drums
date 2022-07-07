@@ -1,24 +1,14 @@
-import cv2 as cv
 import mediapipe as mp
-import time
 import cvzone
-import numpy as np
-from functions import get_label
-
-from functions import image_config
-from functions import gesture
-from functions import image_resize
 import pygame
-from tkinter import *
-from PIL import Image, ImageTk
+import time
 from random import randrange
 
-## global variables
-run_loop = True
-run_game = False
-simon_says = ""
-user_replies = ""
-SIMON_ADD_COLOR = False
+from tkinter import *
+from PIL import Image, ImageTk
+
+from functions import *
+
 
 ## paths
 icon_drum_path = "images/icon.ico"
@@ -29,11 +19,12 @@ image_snare_path = "images/snare.png"
 image_bass_path = "images/bass.png"
 image_tom_path = "images/tom.png"
 
-sound_ride_path = "sound/hihat.mp3"
-sound_crash_path = "sound/cymbal.mp3"
-sound_snare_path = "sound/drum_snare.mp3"
-sound_bass_path = "sound/drum_bass.mp3"
-sound_tom_path = "sound/drum_tom1.mp3"
+sound_ride_path = "sounds/hihat.mp3"
+sound_crash_path = "sounds/cymbal.mp3"
+sound_snare_path = "sounds/drum_snare.mp3"
+sound_bass_path = "sounds/drum_bass.mp3"
+sound_tom_path = "sounds/drum_tom1.mp3"
+
 
 ## image positions
 Top_Left = 1
@@ -42,30 +33,39 @@ Bottom_Left = 3
 Bottom_Middle = 4
 Bottom_Right = 5
 
+
 ## used for fps
 previousTime = 0
 currentTime = 0
+
 
 ## used for tkinter gui
 gui_width_addition = 250
 gui_height_addition = 100
 
+
 ## used for simon says
+run_game = False
+simon_says = ""
+user_replies = ""
+SIMON_ADD_COLOR = False
 step = 0
 simon_currentTime = 0
 simon_startTime = 0
 USERS_TURN = False
 
-## captures Webcam (may have to put another integer than 0 if you do not see through the wanted device)
-# capture = cv.VideoCapture(0, cv.CAP_DSHOW)
-capture = cv.VideoCapture(0)
 
-## image positions (top left = tl // bottom right = br)
+## captures Webcam (may have to put another integer than 0 if you do not see through the wanted device)
+#capture = cv.VideoCapture(0, cv.CAP_DSHOW)
+capture = cv.VideoCapture(0)  # if this line does not work for you try the previous one
+
+
+## config images (top left corner = tl // bottom right corner = br)
 border_offset = 30
 isTrue, frame = capture.read()
 frame = image_resize(frame, height=720)
 frame_h, frame_w, frame_c = frame.shape
-print(frame.shape)
+#print(frame.shape)
 
 ride_img, ride_img_tl_x, ride_img_tl_y, ride_img_br_x, ride_img_br_y = image_config(image_ride_path, frame_w, frame_h, border_offset, Top_Left)
 crash_img, crash_img_tl_x, crash_img_tl_y, crash_img_br_x, crash_img_br_y = image_config(image_crash_path, frame_w, frame_h, border_offset, Top_Right)
@@ -73,7 +73,8 @@ snare_img, snare_img_tl_x, snare_img_tl_y, snare_img_br_x, snare_img_br_y = imag
 bass_img, bass_img_tl_x, bass_img_tl_y, bass_img_br_x, bass_img_br_y = image_config(image_bass_path, frame_w, frame_h, border_offset, Bottom_Middle)
 tom_img, tom_img_tl_x, tom_img_tl_y, tom_img_br_x, tom_img_br_y = image_config(image_tom_path, frame_w, frame_h, border_offset, Bottom_Right)
 
-## read sound files
+
+## read sounds files
 pygame.mixer.init()
 ride_sound = pygame.mixer.Sound(sound_ride_path)
 crash_sound = pygame.mixer.Sound(sound_crash_path)
@@ -81,12 +82,15 @@ snare_sound = pygame.mixer.Sound(sound_snare_path)
 bass_sound = pygame.mixer.Sound(sound_bass_path)
 tom_sound = pygame.mixer.Sound(sound_tom_path)
 
-## initialize a hand object
+
+## initialize hand object
 mpHands = mp.solutions.hands
 hands = mpHands.Hands(2)  # set the maximum number of hands to 2
 mpDraw = mp.solutions.drawing_utils
 position = [0, 0]  # [left hand, right hand]
 joint_list = [[5, 6, 7], [9, 10, 11], [13, 14, 15], [17, 18, 19]]
+
+
 
 ### tkinter GUI ###
 tkinter_width = str(frame_w + gui_width_addition)
@@ -97,7 +101,8 @@ root.title("Virtual Drum")
 root.iconbitmap(icon_drum_path)
 root.geometry(tkinter_width+"x"+tkinter_height)
 
-## Titel and Webcam
+
+## Title and Webcam
 webcam_label = Label(root, text="Virtual Drum", font=("times new roman", 30, "bold"))
 webcam_label.grid(row=0, column=4)
 webcam_frame = Label(root, bg="black")
@@ -140,7 +145,8 @@ Game_button.grid(row=3, column=10)
 exit_button = Button(root, text="Exit", command=quitGUi, width=10)
 exit_button.grid(row=10, column=10)
 
-### simon says images
+
+## simon says GUI images
 gray_img = Image.new(mode="RGB", size=(100, 100), color=(211, 211, 211))
 gray_img = ImageTk.PhotoImage(gray_img)
 green_img = Image.new(mode="RGB", size=(100, 100), color=(0, 255, 0))
@@ -164,18 +170,21 @@ game_text.set("Welcome to\nVirtual Drum")
 simon_text = Label(root, textvariable=game_text, font=("Arial", 10))
 simon_text.grid(row=5, column=10)
 
+
+## loop code until exit button is pressed
+run_loop = True
 while run_loop:
     ## capture Webcam frames
     isTrue, frame = capture.read()
     frame = image_resize(frame, height=720)
     frame = cv.flip(frame, 1)
 
-    ## process hands (currently maximum amount of hands is 2; if you want more or less hands see 'initialize a hand object' mpHands.Hands())
+    ## process hands (currently maximum amount of hands is 2; if you want more or less hands see 'initialize hand object' mpHands.Hands())
     frameRGB = cv.cvtColor(frame, cv.COLOR_BGR2RGB)
     results = hands.process(frameRGB)
 
     ## generate landmarks on hands
-    # print(results.multi_hand_landmarks)
+    #print(results.multi_hand_landmarks)
     if results.multi_hand_landmarks:
         for num, handLms in enumerate(results.multi_hand_landmarks):
             flag, LR = gesture(handLms, joint_list, num, results)
@@ -220,13 +229,13 @@ while run_loop:
 
             mpDraw.draw_landmarks(frame, handLms, mpHands.HAND_CONNECTIONS)
 
-    ## add fps to webcam
+    # add fps to webcam frame
     currentTime = time.time()
     fps = 1 / (currentTime - previousTime)
     previousTime = currentTime
     cv.putText(frame, str(int(fps)), (int(frame_w / 2 - frame_w / 15), 80), cv.FONT_HERSHEY_TRIPLEX, 3, (0, 255, 0), 3)
 
-    ## add drum parts to webcam
+    # add drum parts to webcam frame
     frame = cvzone.overlayPNG(frame, ride_img, [ride_img_tl_x, ride_img_tl_y])
     frame = cvzone.overlayPNG(frame, crash_img, [crash_img_tl_x, crash_img_tl_y])
     frame = cvzone.overlayPNG(frame, snare_img, [snare_img_tl_x, snare_img_tl_y])
@@ -239,19 +248,20 @@ while run_loop:
     cv.rectangle(frame, (bass_img_tl_x, bass_img_tl_y), (bass_img_br_x, bass_img_br_y), (255, 255, 0), 2)
     cv.rectangle(frame, (tom_img_tl_x, tom_img_tl_y), (tom_img_br_x, tom_img_br_y), (255, 0, 255), 2)
 
+
     ## simon says
     if run_game:
         simon_currentTime = time.time()
 
-        ## add color
+        # add color
         if SIMON_ADD_COLOR:
             simon_says += str(randrange(5) + 1)
             SIMON_ADD_COLOR = False
-            # print(simon_says)
+            #print(simon_says)
             simon_startTime = simon_currentTime
             USERS_TURN = False
 
-        ## show color(s)
+        # show color(s)
         if simon_currentTime - simon_startTime >= 1:
             if simon_img == gray_img and len(simon_says) > step:
                 if int(simon_says[step]) == 1:
@@ -276,12 +286,18 @@ while run_loop:
                 if len(simon_says) != step:
                     simon_startTime = simon_currentTime
 
-        ## start recognizing user input
+        # start recognizing user input
         if simon_currentTime - simon_startTime >= 2 and len(simon_says) == step:
             game_text.set("Repeat")
             USERS_TURN = True
 
-        ## determine simon says result
+        # determine simon says result
+        for i in range(0, len(user_replies)):
+            if user_replies[i] != simon_says[i]:
+                run_game = False
+                game_text.set(f"Game over\nYour score: {len(simon_says) - 1}")
+                simon_says = ""
+
         if len(user_replies) == len(simon_says):
             if simon_says != user_replies:
                 run_game = False
@@ -295,13 +311,15 @@ while run_loop:
     else:
         simon_img = gray_img
 
-    ## display Webcam
+
+    ## display Webcam frame
     webcam_img = cv.cvtColor(frame, cv.COLOR_BGR2RGB)
     webcam_img = ImageTk.PhotoImage(Image.fromarray(webcam_img))
     webcam_frame['image'] = webcam_img
 
-    ## display simon says image
+    # display simon says image
     simon_frame['image'] = simon_img
 
-    ## update gui
+
+    ## update GUI
     root.update()
