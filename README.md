@@ -45,7 +45,6 @@ main.py is structured as follows:
        - compare user input with given sequence
     - display webcam / Simon says
 
-
 functions.py concludes helper functions for main.py. These are:
  - gesture(hand, joint_list, index, results) - determines if your index finger is stretched (e.g., if you make a fist, you won't play a sound)
  - image_resize(image, width=None, height=None, inter=cv.INTER_AREA) - resizes an image without destroying the ratio (if only given width or height)
