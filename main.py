@@ -13,17 +13,17 @@ from functions import *
 ## paths
 icon_drum_path = "images/icon.ico"
 
+image_hihat_path = "images/hihat.png"
 image_ride_path = "images/ride.png"
-image_crash_path = "images/crash.png"
 image_snare_path = "images/snare.png"
 image_bass_path = "images/bass.png"
 image_tom_path = "images/tom.png"
 
-sound_ride_path = "sounds/hihat.mp3"
-sound_crash_path = "sounds/cymbal.mp3"
-sound_snare_path = "sounds/drum_snare.mp3"
-sound_bass_path = "sounds/drum_bass.mp3"
-sound_tom_path = "sounds/drum_tom1.mp3"
+sound_hihat_path = "sounds/hihat.mp3"
+sound_ride_path = "sounds/ride.mp3"
+sound_snare_path = "sounds/snare.mp3"
+sound_bass_path = "sounds/bass.mp3"
+sound_tom_path = "sounds/tom.mp3"
 
 
 ## image positions
@@ -67,8 +67,8 @@ frame = image_resize(frame, height=720)
 frame_h, frame_w, frame_c = frame.shape
 #print(frame.shape)
 
-ride_img, ride_img_tl_x, ride_img_tl_y, ride_img_br_x, ride_img_br_y = image_config(image_ride_path, frame_w, frame_h, border_offset, Top_Left)
-crash_img, crash_img_tl_x, crash_img_tl_y, crash_img_br_x, crash_img_br_y = image_config(image_crash_path, frame_w, frame_h, border_offset, Top_Right)
+hihat_img, hihat_img_tl_x, hihat_img_tl_y, hihat_img_br_x, hihat_img_br_y = image_config(image_hihat_path, frame_w, frame_h, border_offset, Top_Left)
+ride_img, ride_img_tl_x, ride_img_tl_y, ride_img_br_x, ride_img_br_y = image_config(image_ride_path, frame_w, frame_h, border_offset, Top_Right)
 snare_img, snare_img_tl_x, snare_img_tl_y, snare_img_br_x, snare_img_br_y = image_config(image_snare_path, frame_w, frame_h, border_offset, Bottom_Left)
 bass_img, bass_img_tl_x, bass_img_tl_y, bass_img_br_x, bass_img_br_y = image_config(image_bass_path, frame_w, frame_h, border_offset, Bottom_Middle)
 tom_img, tom_img_tl_x, tom_img_tl_y, tom_img_br_x, tom_img_br_y = image_config(image_tom_path, frame_w, frame_h, border_offset, Bottom_Right)
@@ -76,8 +76,8 @@ tom_img, tom_img_tl_x, tom_img_tl_y, tom_img_br_x, tom_img_br_y = image_config(i
 
 ## read sounds files
 pygame.mixer.init()
+hihat_sound = pygame.mixer.Sound(sound_hihat_path)
 ride_sound = pygame.mixer.Sound(sound_ride_path)
-crash_sound = pygame.mixer.Sound(sound_crash_path)
 snare_sound = pygame.mixer.Sound(sound_snare_path)
 bass_sound = pygame.mixer.Sound(sound_bass_path)
 tom_sound = pygame.mixer.Sound(sound_tom_path)
@@ -194,15 +194,15 @@ while run_loop:
                 cv.putText(frame, text, coord, cv.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2, cv.LINE_AA)
 
             if flag:
-                if ride_img_tl_y < handLms.landmark[8].y * frame_h < ride_img_br_y and ride_img_tl_x < handLms.landmark[8].x * frame_w < ride_img_br_x:
+                if hihat_img_tl_y < handLms.landmark[8].y * frame_h < hihat_img_br_y and hihat_img_tl_x < handLms.landmark[8].x * frame_w < hihat_img_br_x:
                     if position[LR] != Top_Left:
-                        ride_sound.play()
+                        hihat_sound.play()
                         if USERS_TURN:
                             user_replies += str(Top_Left)
                     position[LR] = Top_Left
-                elif crash_img_tl_y < handLms.landmark[8].y * frame_h < crash_img_br_y and crash_img_tl_x < handLms.landmark[8].x * frame_w < crash_img_br_x:
+                elif ride_img_tl_y < handLms.landmark[8].y * frame_h < ride_img_br_y and ride_img_tl_x < handLms.landmark[8].x * frame_w < ride_img_br_x:
                     if position[LR] != Top_Right:
-                        crash_sound.play()
+                        ride_sound.play()
                         if USERS_TURN:
                             user_replies += str(Top_Right)
                     position[LR] = Top_Right
@@ -236,14 +236,14 @@ while run_loop:
     cv.putText(frame, str(int(fps)), (int(frame_w / 2 - frame_w / 15), 80), cv.FONT_HERSHEY_TRIPLEX, 3, (0, 255, 0), 3)
 
     # add drum parts to webcam frame
+    frame = cvzone.overlayPNG(frame, hihat_img, [hihat_img_tl_x, hihat_img_tl_y])
     frame = cvzone.overlayPNG(frame, ride_img, [ride_img_tl_x, ride_img_tl_y])
-    frame = cvzone.overlayPNG(frame, crash_img, [crash_img_tl_x, crash_img_tl_y])
     frame = cvzone.overlayPNG(frame, snare_img, [snare_img_tl_x, snare_img_tl_y])
     frame = cvzone.overlayPNG(frame, bass_img, [bass_img_tl_x, bass_img_tl_y])
     frame = cvzone.overlayPNG(frame, tom_img, [tom_img_tl_x, tom_img_tl_y])
 
+    cv.rectangle(frame, (hihat_img_tl_x, hihat_img_tl_y), (hihat_img_br_x, hihat_img_br_y), (255, 0, 0), 2)
     cv.rectangle(frame, (ride_img_tl_x, ride_img_tl_y), (ride_img_br_x, ride_img_br_y), (0, 255, 0), 2)
-    cv.rectangle(frame, (crash_img_tl_x, crash_img_tl_y), (crash_img_br_x, crash_img_br_y), (255, 0, 0), 2)
     cv.rectangle(frame, (snare_img_tl_x, snare_img_tl_y), (snare_img_br_x, snare_img_br_y), (0, 0, 255), 2)
     cv.rectangle(frame, (bass_img_tl_x, bass_img_tl_y), (bass_img_br_x, bass_img_br_y), (255, 255, 0), 2)
     cv.rectangle(frame, (tom_img_tl_x, tom_img_tl_y), (tom_img_br_x, tom_img_br_y), (255, 0, 255), 2)
@@ -265,11 +265,11 @@ while run_loop:
         if simon_currentTime - simon_startTime >= 1:
             if simon_img == gray_img and len(simon_says) > step:
                 if int(simon_says[step]) == 1:
+                    simon_img = blue_img
+                    hihat_sound.play()
+                elif int(simon_says[step]) == 2:
                     simon_img = green_img
                     ride_sound.play()
-                elif int(simon_says[step]) == 2:
-                    simon_img = blue_img
-                    crash_sound.play()
                 elif int(simon_says[step]) == 3:
                     simon_img = red_img
                     snare_sound.play()
